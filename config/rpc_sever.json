@@ -1,0 +1,11 @@
+{
+    "servers_name_prefix": "mooncrpc",
+    "servers_ip": "0.0.0.0",
+    "servers_port": 8989,
+    "thread_pool": {
+        "core_threads": 8,
+        "max_threads": 16,
+        "queue_size": 10000,
+        "keep_alive_time": 60
+    }
+}
