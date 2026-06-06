@@ -1,1 +1,13 @@
-test.cc
+# 其他可能的临时文件或日志
+.cache/
+
+# 编译输出目录
+build/
+
+# CMake/Clangd 生成的配置文件（不应提交）
+compile_commands.json
+
+# VS Code 配置文件（如果你不想提交个人的编辑器配置）
+.vscode/
+
+README.md
