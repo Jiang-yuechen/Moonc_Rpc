@@ -2,7 +2,7 @@
 
 namespace mooncrpc {
 
-bool ThreadPoolConfig::InitThreadConfig(const nlohmann::json& config) {
+bool ThreadPoolConfig::InitThreadPoolConfig(const nlohmann::json& config) {
     try {
         //使用config.value("key", default_value) 避免大量繁琐的if else语句
         //当不能从config读取到相应的键值时会启用替补参数default_value传给变量

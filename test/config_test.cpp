@@ -1,4 +1,4 @@
-#include "../src/load_config/thread_pool_config.h"
+#include "../src/load_config/rpc_server_config.h"
 #include "../src/log/log_manager.h"
 #include <iostream>
 
@@ -12,42 +12,42 @@ int main() {
         return -1;
     }
 
-    LOG_INFO("======开始线程池配置测试======");
-    //2.模拟从配置文件中读取数据，避免依赖外部文件读取逻辑
-    json mock_config = {
-        { "core_threads", 8 },
-        { "max_threads", 16 },
-        { "queue_size", 10000 },
-        { "keep_alive_time", 60 }
-    };
+    LOG_INFO("======开始RPC服务端配置组合测试======");
+    //2.获取单例并加载真实文件
+    auto& server_config = RpcServerConfig::GetInstance();
 
-    //3.创建配置对象并初始化
-    ThreadPoolConfig thread_pool_config;
-    if (thread_pool_config.InitThreadConfig(mock_config)) {
-        LOG_INFO("线程池配置解析成功！");
+    if (server_config.InitRpcServerConfig("../config/rpc_server.json")) {   //相对目录是build/ 开始
+        LOG_INFO("---基础服务端配置---");
+        LOG_INFO("Prefix: {}", server_config.GetServersNamePrefix());
+        LOG_INFO("IP:Port: {}:{}", server_config.GetServersIp(), server_config.GetServersPort());
 
-        //验证解析结果
-        LOG_INFO("Core Threads: {}", thread_pool_config.GetCoreThreads());
-        LOG_INFO("Max Threads: {}", thread_pool_config.GetMaxThreads());
-        LOG_INFO("Queue Threads: {}", thread_pool_config.GetCoreThreads());
-        LOG_INFO("Keep Alive Time: {}s", thread_pool_config.GetKeepAliveTime());
+        LOG_INFO("---委派解析的线程池配置---");
+        auto* thread_pool_config = server_config.GetThreadPoolConfig();
+        LOG_INFO("Core Threads: {}", thread_pool_config->GetCoreThreads());
+
+        LOG_INFO("---委派解析的注册中心配置---");
+        auto* registry_config = server_config.GetServiceRegistryConfig();
+        LOG_INFO("Service Name: {}", registry_config->GetServiceName());
+        LOG_INFO("Node Count: {}", registry_config->GetRegistryNodesSize());
+        for (const auto& node :registry_config->GetRegistryNodes()) {   //获取注册节点信息结构体数组
+            LOG_INFO(" -> Node IP:prot : {}:{}", node.address, node.port);
+        }
     } else {
-        LOG_ERROR("线程池配置解析失败！");
+        LOG_ERROR("解析RPC服务端配置失败！");
     }
 
-    //4.异常测试
-    LOG_INFO("======测试异常配置======");
-    json invalid_config = {
-        { "core_threads", 0}
-    };
-    ThreadPoolConfig invalid_cr_config;
-    if (!invalid_cr_config.InitThreadConfig(invalid_config)) {
-        LOG_INFO("已重新调整为合理配置");
-    } else {
-        LOG_ERROR("重新调整配置数据失败！");
-    }
+    // //3.异常测试
+    // LOG_INFO("======测试异常配置======");
+    // json invalid_config = {
+    //     { "core_threads", 0}
+    // };
+    // ThreadPoolConfig invalid_cr_config;
+    // if (!invalid_cr_config.InitThreadPoolConfig(invalid_config)) {
+    //     LOG_INFO("已重新调整为合理配置");
+    // } else {
+    //     LOG_ERROR("重新调整配置数据失败！");
+    // }
 
-    LOG_INFO("===线程池配置数据测试结束===");
-
+    LOG_INFO("===RPC服务端配置数据测试结束===");
     return 0;
 }

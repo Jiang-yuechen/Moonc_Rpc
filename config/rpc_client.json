@@ -1,0 +1,7 @@
+{
+    "zk_host": "127.0.0.1",
+    "zk_port": 2181,
+    "zk_namespace": "/mooncrpc/mooncrpc_service",
+    "timeout_ms": 3000,
+    "retry_times": 3
+}

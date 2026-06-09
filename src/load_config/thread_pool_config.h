@@ -13,7 +13,7 @@ public:
     ~ThreadPoolConfig() = default;
 
     //从JSON对象初始化
-    bool InitThreadConfig(const nlohmann::json& config);
+    bool InitThreadPoolConfig(const nlohmann::json& config);
 
     //Getter方法
     uint16_t GetCoreThreads() const { return core_threads_; }

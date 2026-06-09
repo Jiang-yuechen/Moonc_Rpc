@@ -36,6 +36,9 @@ find_package(protobuf CONFIG REQUIRED)
 set(CONFIG_SRC
     src/log/log_manager.cpp
     src/load_config/thread_pool_config.cpp
+    src/load_config/registry_config.cpp
+    src/load_config/rpc_server_config.cpp
+    src/load_config/rpc_client_config.cpp
 )
 
 set(TEST_SRC
