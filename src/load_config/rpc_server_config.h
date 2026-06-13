@@ -1,3 +1,5 @@
+#pragma once
+
 //实现服务端总配置
 #include "thread_pool_config.h"
 #include "registry_config.h"
