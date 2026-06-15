@@ -1,7 +1,7 @@
 #指定CMake要求的最低版本号
 cmake_minimum_required(VERSION 3.10)
-#生成的项目名(即PROJECT_NAME)
-project(ConnHandlerTest)
+#生成的项目名(即PROJECT_NAME) ----------------------------------->动态更新
+project(ThreadPoolTest)
 
 #用于定义某个宏
 #add_definitions(-THREADED)
@@ -56,15 +56,20 @@ set(CONN_BALANCER_SRC
     src/zookeeper/zk_client.cpp         # 依赖底层 ZK 驱动
     src/log/log_manager.cpp 
 )
-
-#Test 模块 ------>动态更新
-set(TEST_SRC
-    test/conn_handler_test.cpp
+# 线程池模块测试
+set(THREAD_POOL_SRC 
+    src/thread_pool/thread_pool.cpp
+    src/log/log_manager.cpp 
 )
 
-#合并源文件列表 ------->动态更新
+#Test 模块 --------------------------------------->动态更新
+set(TEST_SRC
+    test/thread_pool_test.cpp
+)
+
+#合并源文件列表 -------------------------------->动态更新
 set(PROJECT_SOURCES
-    ${CONN_BALANCER_SRC}
+    ${THREAD_POOL_SRC}
     ${TEST_SRC}
 )
 
@@ -77,7 +82,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${PROJECT_SOURCE_DIR}/src
 )
 
-#链接静态库/动态库到指定的可执行程序(-l) ------->动态更新
+#链接静态库/动态库到指定的可执行程序(-l) ------------------------->动态更新
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     spdlog::spdlog
     nlohmann_json::nlohmann_json
