@@ -1,7 +1,7 @@
 #指定CMake要求的最低版本号
 cmake_minimum_required(VERSION 3.10)
 #生成的项目名(即PROJECT_NAME) ----------------------------------->动态更新
-project(ThreadPoolTest)
+project(CompressTest)
 
 #用于定义某个宏
 #add_definitions(-THREADED)
@@ -61,15 +61,20 @@ set(THREAD_POOL_SRC
     src/thread_pool/thread_pool.cpp
     src/log/log_manager.cpp 
 )
+# 数据压缩模块测试
+set(COMPRESS_SRC
+    src/compress_data/zstd_compress.cpp
+    src/log/log_manager.cpp    
+)
 
 #Test 模块 --------------------------------------->动态更新
 set(TEST_SRC
-    test/thread_pool_test.cpp
+    test/compress_test.cpp
 )
 
 #合并源文件列表 -------------------------------->动态更新
 set(PROJECT_SOURCES
-    ${THREAD_POOL_SRC}
+    ${COMPRESS_SRC}
     ${TEST_SRC}
 )
 

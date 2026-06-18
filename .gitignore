@@ -12,4 +12,5 @@ compile_commands.json
 
 README.md
 
-compress_data
+encrypt
+encrypt_test.cpp
