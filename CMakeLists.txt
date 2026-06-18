@@ -1,7 +1,7 @@
 #指定CMake要求的最低版本号
 cmake_minimum_required(VERSION 3.10)
 #生成的项目名(即PROJECT_NAME) ----------------------------------->动态更新
-project(EncryptTest)
+project(SerializerTest)
 
 #用于定义某个宏
 #add_definitions(-THREADED)
@@ -30,7 +30,7 @@ find_package(protobuf CONFIG REQUIRED)
 
 # 随着模块增加，建议按目录分类管理源文件，保持清晰
 #自定义变量，解析变量使用美元符$
-#配置模块
+# 配置模块
 set(CONFIG_SRC
     src/log/log_manager.cpp
     src/load_config/thread_pool_config.cpp
@@ -38,12 +38,12 @@ set(CONFIG_SRC
     src/load_config/rpc_server_config.cpp
     src/load_config/rpc_client_config.cpp
 )
-#ZK 模块
+# Zookeeper 模块
 set(ZK_SRC
     src/zookeeper/zk_client.cpp
     src/log/log_manager.cpp
 )
-#服务注册模块
+# 服务注册模块
 set(REGISTRY_SRC
     src/registry/service_registry.cpp
     src/zookeeper/zk_client.cpp
@@ -56,12 +56,12 @@ set(CONN_BALANCER_SRC
     src/zookeeper/zk_client.cpp         # 依赖底层 ZK 驱动
     src/log/log_manager.cpp 
 )
-# 线程池模块测试
+# 线程池模块
 set(THREAD_POOL_SRC 
     src/thread_pool/thread_pool.cpp
     src/log/log_manager.cpp 
 )
-# 数据压缩模块测试
+# 数据压缩模块
 set(COMPRESS_SRC
     src/compress_data/zstd_compress.cpp
     src/log/log_manager.cpp    
@@ -71,15 +71,20 @@ set(ENCRYPT_SRC
     src/encrypt/aes_encrypt.cpp
     src/log/log_manager.cpp 
 )
+# 序列化模块
+set(SERIALIZER_SRC
+    protos/message.pb.cc
+    src/log/log_manager.cpp
+)
 
 #Test 模块 --------------------------------------->动态更新
 set(TEST_SRC
-    test/encrypt_test.cpp
+    test/serializer_test.cpp
 )
 
 #合并源文件列表 -------------------------------->动态更新
 set(PROJECT_SOURCES
-    ${ENCRYPT_SRC}
+    ${SERIALIZER_SRC}
     ${TEST_SRC}
 )
 
@@ -90,6 +95,7 @@ add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 # PRIVATE 关键字表示：只有 ConfigTest 这个程序能看到 src 下的头文件，不会污染其他目标
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/protos
 )
 
 #链接静态库/动态库到指定的可执行程序(-l) ------------------------->动态更新
