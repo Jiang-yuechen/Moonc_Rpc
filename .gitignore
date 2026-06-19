@@ -11,3 +11,6 @@ compile_commands.json
 .vscode/
 
 README.md
+
+/src/service
+/test/service_test.cpp

@@ -1,7 +1,7 @@
 #指定CMake要求的最低版本号
 cmake_minimum_required(VERSION 3.10)
 #生成的项目名(即PROJECT_NAME) ----------------------------------->动态更新
-project(SerializerTest)
+project(ServiceTest)
 
 #用于定义某个宏
 #add_definitions(-THREADED)
@@ -28,7 +28,7 @@ find_package(zstd CONFIG REQUIRED)
 find_package(protobuf CONFIG REQUIRED)
 
 
-# 随着模块增加，建议按目录分类管理源文件，保持清晰
+# 随着模块增加，建议按目录分类管理源文件，保持清晰 --------------------------------------->动态更新
 #自定义变量，解析变量使用美元符$
 # 配置模块
 set(CONFIG_SRC
@@ -76,15 +76,27 @@ set(SERIALIZER_SRC
     protos/message.pb.cc
     src/log/log_manager.cpp
 )
+# 协议封解包模块
+set(PROTOCOL_SRC
+    src/protocol/rpc_protocol.cpp
+    src/log/log_manager.cpp
+)
+# 本地服务路由与分发模块测试
+set(SERVICE_SRC 
+    src/service/service_manager.cpp
+    src/thread_pool/thread_pool.cpp
+    src/protocol/rpc_protocol.cpp
+    src/log/log_manager.cpp 
+)
 
 #Test 模块 --------------------------------------->动态更新
 set(TEST_SRC
-    test/serializer_test.cpp
+    test/service_test.cpp
 )
 
 #合并源文件列表 -------------------------------->动态更新
 set(PROJECT_SOURCES
-    ${SERIALIZER_SRC}
+    ${SERVICE_SRC}
     ${TEST_SRC}
 )
 
