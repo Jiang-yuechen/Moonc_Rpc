@@ -94,7 +94,7 @@ set(TEST_SRC
     test/service_test.cpp
 )
 
-#合并源文件列表 -------------------------------->动态更新
+#合并源文件列表 --------------------------------->动态更新
 set(PROJECT_SOURCES
     ${SERVICE_SRC}
     ${TEST_SRC}
