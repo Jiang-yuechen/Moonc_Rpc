@@ -1,7 +1,7 @@
 #指定CMake要求的最低版本号
 cmake_minimum_required(VERSION 3.10)
 #生成的项目名(即PROJECT_NAME) ----------------------------------->动态更新
-project(CompressTest)
+project(EncryptTest)
 
 #用于定义某个宏
 #add_definitions(-THREADED)
@@ -66,15 +66,20 @@ set(COMPRESS_SRC
     src/compress_data/zstd_compress.cpp
     src/log/log_manager.cpp    
 )
+# 加密解密模块测试
+set(ENCRYPT_SRC 
+    src/encrypt/aes_encrypt.cpp
+    src/log/log_manager.cpp 
+)
 
 #Test 模块 --------------------------------------->动态更新
 set(TEST_SRC
-    test/compress_test.cpp
+    test/encrypt_test.cpp
 )
 
 #合并源文件列表 -------------------------------->动态更新
 set(PROJECT_SOURCES
-    ${COMPRESS_SRC}
+    ${ENCRYPT_SRC}
     ${TEST_SRC}
 )
 
