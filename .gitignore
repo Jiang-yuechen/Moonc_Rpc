@@ -12,5 +12,5 @@ compile_commands.json
 
 README.md
 
-encrypt
-encrypt_test.cpp
+*.pb.cc
+*.pb.h

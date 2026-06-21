@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+//统一使用我们项目的命名空间，编译后会变成 namespace mooncrpc
+package mooncrpc;
+
+//示例：Hello服务的请求
+message HelloRequest {
+    string name = 1;
+}
+
+//示例：Hello服务的响应
+message HelloResponse {
+    string greeting = 1;
+}
+
+//示例：用户登陆请求
+message LoginRequest {
+    string username = 1;
+    string password = 2;
+}
+
+//示例：用户登陆相应
+message LoginResponse {
+    bool seccess = 1;
+    string token = 2;
+    string error_message = 3;
+}
