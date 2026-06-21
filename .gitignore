@@ -12,7 +12,5 @@ compile_commands.json
 
 README.md
 
-/src/service
-/test/service_test.cpp
 *.pb.cc
 *.pb.h
