@@ -11,3 +11,6 @@ compile_commands.json
 .vscode/
 
 README.md
+
+*.pb.cc
+*.pb.h
