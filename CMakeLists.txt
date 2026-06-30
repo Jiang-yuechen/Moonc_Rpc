@@ -1,7 +1,7 @@
 #指定CMake要求的最低版本号
 cmake_minimum_required(VERSION 3.10)
 #生成的项目名(即PROJECT_NAME) ----------------------------------->动态更新
-project(ServiceTest)
+project(MessageCycleTest)
 
 #用于定义某个宏
 #add_definitions(-THREADED)
@@ -81,22 +81,44 @@ set(PROTOCOL_SRC
     src/protocol/rpc_protocol.cpp
     src/log/log_manager.cpp
 )
-# 本地服务路由与分发模块测试
+# 本地服务路由与分发模块
 set(SERVICE_SRC 
     src/service/service_manager.cpp
     src/thread_pool/thread_pool.cpp
     src/protocol/rpc_protocol.cpp
     src/log/log_manager.cpp 
 )
+# 网络底层 Socket 模块
+set(NETWORK_SOCKET_SRC 
+    src/network/create_socket.cpp
+    src/log/log_manager.cpp 
+)
+# 网络连接封装模块
+set(CONNECTION_SRC
+    src/network/create_socket.cpp
+    src/network/connection.cpp
+    src/log/log_manager.cpp 
+)
+# 网络层最终 Reactor 事件循环模块
+set(MESSAGE_CYCLE_SRC 
+    src/network/create_socket.cpp
+    src/network/connection.cpp
+    src/network/connection_manager.cpp
+    src/network/message_cycle.cpp
+    src/protocol/rpc_protocol.cpp
+    src/service/service_manager.cpp
+    src/thread_pool/thread_pool.cpp
+    src/log/log_manager.cpp 
+)
 
 #Test 模块 --------------------------------------->动态更新
 set(TEST_SRC
-    test/service_test.cpp
+    test/message_cycle_test.cpp
 )
 
 #合并源文件列表 --------------------------------->动态更新
 set(PROJECT_SOURCES
-    ${SERVICE_SRC}
+    ${MESSAGE_CYCLE_SRC}
     ${TEST_SRC}
 )
 
