@@ -1,5 +1,3 @@
-#pragma once
-
 #include "zk_conn_handler.h"
 #include "../log/log_manager.h"
 #include "conn_balancer/load_balancer.h"
