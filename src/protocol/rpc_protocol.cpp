@@ -37,6 +37,11 @@ bool RpcProtocol::Encode(const RpcMessage& msg, std::string& out_buffer) {
 
 bool RpcProtocol::Decode(const std::string& in_buffer, RpcMessage& out_msg) {
     try {
+        // 如果缓冲区完全为空，说明数据恰好处理完，静默返回即可，无需打印警告
+        if (in_buffer.empty()) {
+            return false;
+        }
+
         //1.协议头半包校验：如果接收到的数据连包头大小都不够，直接拒绝解析，等待更多数据到来
         if (in_buffer.size() < HEADER_SIZE) {
             LOG_WARN("Decode FAILED: Buffer size ({}) is smaller than header size ({})", 

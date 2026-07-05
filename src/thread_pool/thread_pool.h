@@ -13,7 +13,7 @@
 namespace mooncrpc {
 
 // ========================================================
-// 1. 基础组件定义 (对应你大纲中的 优先级、状态、配置)
+// 1. 基础组件定义 (对应大纲中的 优先级、状态、配置)
 // ========================================================
 
 /**
@@ -36,9 +36,9 @@ enum class ThreadPoolState {
 };
 
 /**
- * @brief 线程池动态配置结构体
+ * @brief 线程池动态配置参数结构体
  */
-struct ThreadPoolConfig {
+struct ThreadPoolParams {
     size_t core_threads = std::thread::hardware_concurrency();    //核心线程数(默认等于CPU核心数)
     size_t max_threads = std::thread::hardware_concurrency() * 2; //最大线程数(按需扩展的上限)
     size_t max_queue_size = 10000;                                //最大队列大小(背压控制，防止内存OOM)
@@ -110,7 +110,7 @@ public:
     explicit ThreadPool(size_t threads = std::thread::hardware_concurrency());
 
     //构造函数：基于动态配置的线程池
-    explicit ThreadPool(const ThreadPoolConfig& config);
+    explicit ThreadPool(const ThreadPoolParams& config);
 
     //析构函数
     ~ThreadPool();
@@ -160,7 +160,7 @@ private:
     std::condition_variable not_full_condition_;//唤醒提交线程的条件变量(队列不满可以提交任务)
     bool stop_{false};                          //是否收到停机指令
 
-    ThreadPoolConfig config_;                   //线程池配置
+    ThreadPoolParams config_;                   //线程池配置
     std::atomic<ThreadPoolState> state_{ThreadPoolState::RUNNING};      //线程池状态
 
     //=== 统计信息 ===

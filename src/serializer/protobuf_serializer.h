@@ -39,14 +39,20 @@ public:
     template <typename T>
     static bool Deserialize(const std::string& buffer, T& data) {
         try {
-            T new_data;
-            // ParseFromString 会自动校验字节流是否符合 proto 协议定义
-            if (!new_data.ParseFromString(buffer)) {
-                LOG_ERROR("Failed to parse protobuf message from buffer.");
-                return false;
-            }
-            data = std::move(new_data);
-            return true;
+            // T new_data;
+            // // ParseFromString 会自动校验字节流是否符合 proto 协议定义
+            // if (!new_data.ParseFromString(buffer)) {
+            //     LOG_ERROR("Failed to parse protobuf message from buffer.");
+            //     return false;
+            // }
+            // data = std::move(new_data);
+            // return true;
+
+            // ParseFromString 是 MessageLite 定义的虚函数。
+            // 即便传入的是基类 Message 的引用，由于多态的存在，
+            // 它也会准确地调用具体子类（如 LoginResponse）的反序列化逻辑！
+            // 并且 ParseFromString 内部会自动调用 Clear() 清理老数据，非常安全。
+            return data.ParseFromString(buffer);
         } catch (const std::exception& e) {
             LOG_ERROR("Protobuf deserialization failed: {}", e.what());
             return false;

@@ -3,7 +3,7 @@
 namespace mooncrpc {
 
 //基于配置的构造函数
-ThreadPool::ThreadPool(const ThreadPoolConfig& config) :config_(config) {
+ThreadPool::ThreadPool(const ThreadPoolParams& config) :config_(config) {
     workers_.reserve(config.max_threads);   //预分配最大线程数
     thread_last_active_.resize(config_.max_threads);    //可以记录最大线程数的存活时间
 
@@ -200,6 +200,6 @@ ThreadPoolStats ThreadPool::GetStats() const {
 
 //补充一个简易的单参构造函数方便快捷使用
 ThreadPool::ThreadPool(size_t threads)
-    : ThreadPool(ThreadPoolConfig{threads, threads, 0, std::chrono::milliseconds(60000)}) {};
+    : ThreadPool(ThreadPoolParams{threads, threads, 0, std::chrono::milliseconds(60000)}) {};
 
 }

@@ -1,7 +1,7 @@
 #指定CMake要求的最低版本号
 cmake_minimum_required(VERSION 3.10)
 #生成的项目名(即PROJECT_NAME) ----------------------------------->动态更新
-project(MessageCycleTest)
+project(MooncRPC_Final)
 
 #用于定义某个宏
 #add_definitions(-THREADED)
@@ -111,29 +111,75 @@ set(MESSAGE_CYCLE_SRC
     src/log/log_manager.cpp 
 )
 
-#Test 模块 --------------------------------------->动态更新
-set(TEST_SRC
-    test/message_cycle_test.cpp
+# 框架核心源码整合 
+set(MOONCRPC_FRAMEWORK_SRC
+    src/log/log_manager.cpp
+    
+    # 配置加载模块
+    src/load_config/thread_pool_config.cpp
+    src/load_config/registry_config.cpp
+    src/load_config/rpc_server_config.cpp
+    src/load_config/rpc_client_config.cpp
+    
+    # Zookeeper与服务治理模块
+    src/zookeeper/zk_client.cpp
+    src/registry/service_registry.cpp
+    src/conn_balancer/zk_conn_handler.cpp
+    
+    # 并发与数据流水线模块
+    src/thread_pool/thread_pool.cpp
+    src/compress_data/zstd_compress.cpp
+    src/encrypt/aes_encrypt.cpp
+    
+    # 序列化与协议模块
+    protos/message.pb.cc
+    src/protocol/rpc_protocol.cpp
+    
+    # 本地服务路由模块
+    src/service/service_manager.cpp
+    
+    # 网络引擎模块
+    src/network/create_socket.cpp
+    src/network/connection.cpp
+    src/network/connection_manager.cpp
+    src/network/message_cycle.cpp
+    
+    # 核心门面层 
+    src/core/rpc_server.cpp
+    src/core/rpc_client.cpp
 )
+
+#Test 模块 --------------------------------------->动态更新
+# set(TEST_SRC
+#     example/servers_main.cpp
+#     example/client_main.cpp
+# )
 
 #合并源文件列表 --------------------------------->动态更新
-set(PROJECT_SOURCES
-    ${MESSAGE_CYCLE_SRC}
-    ${TEST_SRC}
-)
+# set(PROJECT_SOURCES
+#     ${MOONCRPC_FRAMEWORK_SRC}
+#     ${TEST_SRC}
+# )
 
 #定义构建可执行程序，指定源文件列表，参数1表示可执行程序名，后面表示全部的源文件
-add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
+# add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 
+# =========================================================================
+# 1. 定义服务端可执行程序 (RpcServerApp)
+# =========================================================================
+# 将服务端的 main 函数与框架源码一起编译
+add_executable(RpcServerApp example/servers_main.cpp ${MOONCRPC_FRAMEWORK_SRC})
+
+# 配置头文件搜索路径
 # 【优化】使用 target_include_directories 代替全局的 include_directories
-# PRIVATE 关键字表示：只有 ConfigTest 这个程序能看到 src 下的头文件，不会污染其他目标
-target_include_directories(${PROJECT_NAME} PRIVATE
+# PRIVATE 关键字表示：只有 测试的 这个程序能看到 src 下的头文件，不会污染其他目标
+target_include_directories(RpcServerApp PRIVATE
     ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/protos
 )
 
 #链接静态库/动态库到指定的可执行程序(-l) ------------------------->动态更新
-target_link_libraries(${PROJECT_NAME} PRIVATE 
+target_link_libraries(RpcServerApp PRIVATE 
     spdlog::spdlog
     nlohmann_json::nlohmann_json
     #unofficial::zookeeper::zookeeper
@@ -143,3 +189,27 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     $<IF:$<TARGET_EXISTS:zstd::libzstd_shared>,zstd::libzstd_shared,zstd::libzstd_static>
     protobuf::libprotobuf
 )
+
+# =========================================================================
+# 2. 定义客户端可执行程序 (RpcClientApp)
+# =========================================================================
+# 将客户端的 main 函数与框架源码一起编译
+add_executable(RpcClientApp example/client_main.cpp ${MOONCRPC_FRAMEWORK_SRC})
+
+# 配置头文件搜索路径
+target_include_directories(RpcClientApp PRIVATE
+    ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/protos
+)
+
+# 链接第三方库
+target_link_libraries(RpcClientApp PRIVATE 
+    spdlog::spdlog
+    nlohmann_json::nlohmann_json
+    zookeeper_mt  
+    Threads::Threads
+    $<IF:$<TARGET_EXISTS:zstd::libzstd_shared>,zstd::libzstd_shared,zstd::libzstd_static>
+    protobuf::libprotobuf
+)
+
+

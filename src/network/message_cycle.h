@@ -9,7 +9,7 @@
 namespace mooncrpc {
 
 /**
- * @brief 网络事件循环
+ * @brief 网络事件循环 (Reactor 模式)
  * @details 基于 Linux epoll 实现的单线程/多线程事件分发器
  * 负责监听新连接、读写事件，并将解码后的数据包派发给业务线程池
  */

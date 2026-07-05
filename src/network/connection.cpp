@@ -56,9 +56,11 @@ int TcpConnection::Read() {
 }
 
 void TcpConnection::AppendToWriteBuffer(const std::string& data) {
-    // 加锁保护，因为这个函数是在 ThreadPool 的子线程中被调用的
-    std::lock_guard<std::mutex> lock(write_mutex_);
-    write_buffer_.append(data);
+    {
+        // 加锁保护，因为这个函数是在 ThreadPool 的子线程中被调用的
+        std::lock_guard<std::mutex> lock(write_mutex_);
+        write_buffer_.append(data);
+    }
 }
 
 int TcpConnection::Write() {
@@ -66,39 +68,43 @@ int TcpConnection::Write() {
         return 0;
     }
 
-    // 加锁保护，因为这个函数是在 Reactor 的主事件线程中被调用的
-    std::lock_guard<std::mutex> lock(write_mutex_);
+    {
+        // 加锁保护，因为这个函数是在 Reactor 的主事件线程中被调用的
+        std::lock_guard<std::mutex> lock(write_mutex_);
+        
+        if (write_buffer_.empty()) {
+            return 0;
+        }
     
-    if (write_buffer_.empty()) return 0;
-
-    int total_sent = 0;
-    
-    // 只要写缓冲区还有数据就不断往网卡塞
-    while (!write_buffer_.empty()) {
-        ssize_t bytes_sent = ::send(fd_, write_buffer_.data(), write_buffer_.size(), 0);
-        if (bytes_sent > 0) {
-            total_sent += bytes_sent;
-            // 塞成功多少就从写缓冲区删除多少
-            write_buffer_.erase(0, bytes_sent);
-        } else if (bytes_sent < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                // 网卡的发送队列满了，TCP 进行拥塞控制
-                // 直接 break 退出去，剩下的数据依然保存在 write_buffer_ 里
-                // 下次 epoll 时再把剩下的发完
-                LOG_DEBUG("Write buffer full on FD {}, will resume later.", fd_);
-                break;
-            } else if (errno == EINTR) {
-                //信号被打断，重试
-                continue;
-            } else {
-                //对端可能已经挂了，导致发不出去
-                LOG_ERROR("Write error on FD {}: {}", fd_, strerror(errno));
-                Close();
-                return -1;
+        int total_sent = 0;
+        
+        // 只要写缓冲区还有数据就不断往网卡塞
+        while (!write_buffer_.empty()) {
+            ssize_t bytes_sent = ::send(fd_, write_buffer_.data(), write_buffer_.size(), 0);
+            if (bytes_sent > 0) {
+                total_sent += bytes_sent;
+                // 塞成功多少就从写缓冲区删除多少
+                write_buffer_.erase(0, bytes_sent);
+            } else if (bytes_sent < 0) {
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    // 网卡的发送队列满了，TCP 进行拥塞控制
+                    // 直接 break 退出去，剩下的数据依然保存在 write_buffer_ 里
+                    // 下次 epoll 时再把剩下的发完
+                    LOG_DEBUG("Write buffer full on FD {}, will resume later.", fd_);
+                    break;
+                } else if (errno == EINTR) {
+                    //信号被打断，重试
+                    continue;
+                } else {
+                    //对端可能已经挂了，导致发不出去
+                    LOG_ERROR("Write error on FD {}: {}", fd_, strerror(errno));
+                    Close();
+                    return -1;
+                }
             }
         }
+        return total_sent;
     }
-    return total_sent;
 }
 
 void TcpConnection::ClearReadBuffer(size_t size) {

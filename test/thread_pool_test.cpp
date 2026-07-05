@@ -15,11 +15,11 @@ int main() {
     LOG_INFO("====== Starting ThreadPool Core Module Test ======");
 
     // 1. 创建一个只有 2 个核心线程的小型线程池，方便我们观察“队列积压”和“插队”现象
-    ThreadPoolConfig config;
-    config.core_threads = 2;
-    config.max_threads = 4;
-    config.max_queue_size = 100;
-    ThreadPool pool(config);
+    ThreadPoolParams params;
+    params.core_threads = 2;
+    params.max_threads = 4;
+    params.max_queue_size = 100;
+    ThreadPool pool(params);
 
     LOG_INFO("--- Phase 1: Testing std::future return value ---");
     // 提交一个普通任务，计算 10 + 20
