@@ -72,7 +72,9 @@ int TcpConnection::Write() {
         // 加锁保护，因为这个函数是在 Reactor 的主事件线程中被调用的
         std::lock_guard<std::mutex> lock(write_mutex_);
         
-        if (write_buffer_.empty()) return 0;
+        if (write_buffer_.empty()) {
+            return 0;
+        }
     
         int total_sent = 0;
         
