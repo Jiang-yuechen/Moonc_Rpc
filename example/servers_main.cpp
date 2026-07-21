@@ -6,9 +6,12 @@ using namespace mooncrpc;
 
 int main() {
     // 初始化日志系统
-    if (!Logger::GetInstance().Init("./server_logs")) {
+    if (!Logger::GetInstance().Init("../config/log_config.json")) {
         return -1;
     }
+
+    // 在压测期间，服务端只打印 ERROR 及以上的日志，屏蔽 INFO 和 WARN
+    spdlog::set_level(spdlog::level::err);
 
     LOG_INFO("====== Starting MooncRPC Server ======");
 

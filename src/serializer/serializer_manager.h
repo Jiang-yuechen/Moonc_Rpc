@@ -1,7 +1,7 @@
 #pragma once
 #include "json_serializer.h"
 #include "protobuf_serializer.h"
-#include "../log/log_manager.h"
+#include "log/log_manager.h"
 #include <concepts>     //引入 C++20 概念库
 
 namespace mooncrpc {

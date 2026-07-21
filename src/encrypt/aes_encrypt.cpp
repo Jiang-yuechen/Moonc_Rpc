@@ -1,5 +1,5 @@
 #include "aes_encrypt.h"
-#include "../log/log_manager.h"
+#include "log/log_manager.h"
 #include <algorithm>
 #include <random>
 
@@ -14,14 +14,29 @@ namespace {
     std::string GenerateRandomBytes(size_t length) {
         std::string result;
         result.reserve(length);
-        std::random_device rd;
-        std::mt19937 gen(rd());
+
+        // std::random_device rd;
+        // std::mt19937 gen(rd());
+        
+        // 使用 thread_local 保证多线程安全并且利用 Lambda 表达式确保引擎只在线程首次调用时初始化一次
+        thread_local std::mt19937 gen([]() {
+            std::random_device rd;
+            return rd();
+        }());
+
+        // 分布器很轻量可以每次创建
         std::uniform_int_distribution<> dis(0, 255);
 
         for (size_t i = 0; i < length; i++) {
             result.push_back(static_cast<char>(dis(gen)));
         }
         return result;
+    }
+
+    // 获取当前时间戳（ms）
+    uint64_t GetCurrentTimestampMs() {
+        auto now = std::chrono::system_clock::now();
+        return std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
     }
 }
 
@@ -260,16 +275,25 @@ std::string AesEncrypt::ShiftDecrypt(const std::string& input, const std::string
  */
 bool AesEncrypt::Encrypt(const std::string& data, std::string& ciphertext) {
     try {
-        if (data.empty()) {
-            LOG_ERROR("Input data is empty.");
-            return false;
-        }
+        // 业务层返回 0 字节包是合法的
+        // if (data.empty()) {
+        //     LOG_ERROR("Input data is empty.");
+        //     return false;
+        // }
 
         //1. 生成 32 字节的随机动态会话密钥
         std::string session_key = GenerateRandomBytes(KEY_LENGTH);
 
-        //2. 用会话密钥加密真实的 Payload 数据
-        std::string encrypted_data = ShiftEncrypt(data, session_key);
+        // 防重放攻击：将 8 字节的当前时间戳拼接到明文最前面
+        uint64_t current_ts = GetCurrentTimestampMs();
+        std::string ts_prefix(sizeof(uint64_t), '\0');      // 时间戳前缀初始化
+        // 将时间戳的内存拷贝到字符串前缀中
+        std::memcpy(&ts_prefix[0], &current_ts, sizeof(uint64_t));
+        
+        std::string data_with_ts = ts_prefix + data;;
+
+        //2. 用会话密钥加密 时间戳 + 真实的 Payload 数据
+        std::string encrypted_data = ShiftEncrypt(data_with_ts, session_key);
 
         //3. 用主密钥对会话密钥进行加密
         std::string encrypted_key = ShiftEncrypt(session_key, master_key_);
@@ -315,8 +339,28 @@ bool AesEncrypt::Decrypt(const std::string& encrypted_data, std::string& plainte
 
         //4. 用主密钥解密会话密钥，再用会话密钥解密数据得到最终明文
         std::string session_key = ShiftDecrypt(encrypted_key, master_key_);
-        plaintext = ShiftDecrypt(encrypted_data_part, session_key);
+        std::string decrypted_data_with_ts = ShiftDecrypt(encrypted_data_part, session_key);
         
+        // 防重放攻击：提取解密后的时间戳并进行阈值校验
+        if (decrypted_data_with_ts.size() < sizeof(uint64_t)) {
+            LOG_ERROR("Decrypted data corrupted: missing timestamp header.");
+            return false;   // 直接放弃
+        }
+
+        uint64_t received_ts = 0;
+        std::memcpy(&received_ts, decrypted_data_with_ts.data(), sizeof(uint64_t));
+
+        uint64_t current_ts = GetCurrentTimestampMs();
+
+        // 设定阈值：如果时间差超过 5000 ms，或者时间戳来自未来（防止时间篡改）直接放弃
+        if (current_ts < received_ts || (current_ts - received_ts) > 5000) {
+            LOG_ERROR("Replay attack detected or packet expired! Time diff exceeds 5000ms.");
+            return false;
+        }
+
+        // 校验通过：剔除前 8 字节的时间戳，返回纯净的业务明文
+        plaintext = decrypted_data_with_ts.substr(sizeof(uint64_t));
+
         return true;
     } catch (const std::exception& e) {
         LOG_ERROR("Decryption failed: {}", e.what());
@@ -324,4 +368,4 @@ bool AesEncrypt::Decrypt(const std::string& encrypted_data, std::string& plainte
     }
 }
     
-}
+} // namespace mooncrpc

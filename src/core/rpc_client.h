@@ -2,6 +2,7 @@
 
 #include <string>
 #include <google/protobuf/message.h>
+#include <unordered_map>
 
 namespace mooncrpc {
 
@@ -32,6 +33,10 @@ public:
 private:
     uint32_t timeout_ms_;       // 网络超时时间
     uint32_t retry_times_;      // 失败重试次数
+
+    // 客户端长连接池
+    // Key: "IP:Port", Value: socket_fd
+    std::unordered_map<std::string, int> connection_pool_;
 
     // 内部底层网络发送引擎
     bool SendAndReceive(const std::string& ip, uint16_t port,

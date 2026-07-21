@@ -1,0 +1,7 @@
+{
+    "log_dir": "./logs",
+    "log_level": "info",
+    "async_mode": true,
+    "async_queue_size": 8192,
+    "async_thread_count": 1
+}

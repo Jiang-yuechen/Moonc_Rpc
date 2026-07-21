@@ -13,7 +13,17 @@ bool RpcClientConfig::InitRpcClientConfig(const std::string& config_file) {
 
     try {
         nlohmann::json config = nlohmann::json::parse(file);
-        
+
+        if (config.contains("load_balancer")) {
+            auto lb_config = config["load_balancer"];
+            lb_type_ = lb_config.value("type", "random");
+            
+            if (lb_config.contains("weights")) {
+                for (auto& el : lb_config["weights"].items()) {
+                    lb_weights_[el.key()] = el.value().get<int>();
+                }
+            }
+        }
         //使用 .value() 提供安全默认值
         SetZkHost(config.value("zk_host", "127.0.0.1"));
         SetZkPort(config.value("zk_port", 2181));

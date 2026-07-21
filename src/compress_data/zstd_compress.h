@@ -1,7 +1,8 @@
 #pragma once
 
-#include "../log/log_manager.h"
+#include <iostream>
 #include <zstd.h>
+#include <vector>
 
 namespace mooncrpc {
 
@@ -25,11 +26,9 @@ public:
         return instance;
     }
 
-    //禁用拷贝和移动
+    //禁用拷贝和赋值
     ZstdCompress(const ZstdCompress&) = delete;
     ZstdCompress& operator=(const ZstdCompress&) = delete;
-    ZstdCompress(ZstdCompress&&) = delete;
-    ZstdCompress& operator=(ZstdCompress&&) = delete;
 
     //字符串处理接口（通常用于 JSON 等文本序列化后的压缩）
     /**
