@@ -9,6 +9,7 @@ int main() {
     // 初始化日志系统
     if (!Logger::GetInstance().Init("./client_logs")) {
         return -1;
+        std::cerr << "Initialize log_system failed!" << std::endl;
     }
 
     LOG_INFO("====== Starting MooncRPC Client ======");
@@ -24,17 +25,17 @@ int main() {
     LoginResponse response;
 
     // 3. 发起远程过程调用 (RPC)
-    LOG_INFO("Initiating RPC Call to [UserService]...");
+    CLIENT_INFO("Initiating RPC Call to [UserService]...");
     if (client.Call("UserService", request, response)) {
         
         // 4. 处理业务返回结果
         if (response.seccess()) {
-            LOG_INFO("RPC Success! Received Token: {}", response.token());
+            CLIENT_INFO("RPC Success! Received Token: {}", response.token());
         } else {
-            LOG_INFO("RPC Success, but Business Logic Failed: {}", response.error_message());
+            CLIENT_INFO("RPC Success, but Business Logic Failed: {}", response.error_message());
         }
     } else {
-        LOG_ERROR("RPC Framework Call Failed. Check network or Zookeeper.");
+        CLIENT_ERROR("RPC Framework Call Failed. Check network or Zookeeper.");
     }
 
     return 0;

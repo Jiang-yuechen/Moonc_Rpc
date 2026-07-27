@@ -1,7 +1,7 @@
 #指定CMake要求的最低版本号
 cmake_minimum_required(VERSION 3.10)
 #生成的项目名(即PROJECT_NAME) ----------------------------------->动态更新
-project(MooncRPC_Final)
+project(BenchmarkAPP_TEST)
 
 #用于定义某个宏
 #add_definitions(-THREADED)
@@ -22,7 +22,6 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 #寻找依赖包(必须分开寻找)
 find_package(spdlog CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
-#find_package(unofficial-zookeeper CONFIG REQUIRED)
 find_package(Threads REQUIRED)    #系统级多线程库
 find_package(zstd CONFIG REQUIRED)
 find_package(protobuf CONFIG REQUIRED)
@@ -120,11 +119,13 @@ set(MOONCRPC_FRAMEWORK_SRC
     src/load_config/registry_config.cpp
     src/load_config/rpc_server_config.cpp
     src/load_config/rpc_client_config.cpp
+    src/load_config/log_config.cpp
     
     # Zookeeper与服务治理模块
     src/zookeeper/zk_client.cpp
     src/registry/service_registry.cpp
     src/conn_balancer/zk_conn_handler.cpp
+    src/conn_balancer/load_balancer.cpp
     
     # 并发与数据流水线模块
     src/thread_pool/thread_pool.cpp
@@ -149,21 +150,53 @@ set(MOONCRPC_FRAMEWORK_SRC
     src/core/rpc_client.cpp
 )
 
+# 动态切换负载均衡模块
+set(LB_TEST_SRC
+    src/conn_balancer/load_balancer.cpp
+    src/log/log_manager.cpp
+    src/load_config/log_config.cpp   # 如果你的日志模块依赖了配置加载器
+)
+
+# 定义加解密基准测试与安全校验程序 (EncryptBenchmark)
+set(BENCHMARK_SRC
+    src/encrypt/aes_encrypt.cpp
+    src/log/log_manager.cpp
+    src/load_config/log_config.cpp
+)
+
 #Test 模块 --------------------------------------->动态更新
-# set(TEST_SRC
-#     example/servers_main.cpp
-#     example/client_main.cpp
-# )
+set(TEST_SRC
+    test/benchmark_test.cpp
+)
 
 #合并源文件列表 --------------------------------->动态更新
-# set(PROJECT_SOURCES
-#     ${MOONCRPC_FRAMEWORK_SRC}
-#     ${TEST_SRC}
-# )
+set(PROJECT_SOURCES
+    ${MOONCRPC_FRAMEWORK_SRC}
+    ${TEST_SRC}
+)
 
 #定义构建可执行程序，指定源文件列表，参数1表示可执行程序名，后面表示全部的源文件
-# add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
+add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/protos
+)
+
+#链接静态库/动态库到指定的可执行程序(-l) ------------------------->动态更新
+target_link_libraries(${PROJECT_NAME} PRIVATE 
+    spdlog::spdlog
+    nlohmann_json::nlohmann_json
+    #unofficial::zookeeper::zookeeper
+    zookeeper_mt  #链接 apt 安装的系统原生库
+    Threads::Threads
+    # 优先链接共享库(动态库)，如果没有再退化链接静态库，这是 vcpkg 官方推荐的写法
+    $<IF:$<TARGET_EXISTS:zstd::libzstd_shared>,zstd::libzstd_shared,zstd::libzstd_static>
+    protobuf::libprotobuf
+)
+
+
+# ========================== 终测 =========================================
 # =========================================================================
 # 1. 定义服务端可执行程序 (RpcServerApp)
 # =========================================================================
@@ -190,26 +223,27 @@ target_link_libraries(RpcServerApp PRIVATE
     protobuf::libprotobuf
 )
 
-# =========================================================================
-# 2. 定义客户端可执行程序 (RpcClientApp)
-# =========================================================================
-# 将客户端的 main 函数与框架源码一起编译
-add_executable(RpcClientApp example/client_main.cpp ${MOONCRPC_FRAMEWORK_SRC})
+# # =========================================================================
+# # 2. 定义客户端可执行程序 (RpcClientApp)
+# # =========================================================================
+# # 将客户端的 main 函数与框架源码一起编译
+# add_executable(RpcClientApp example/client_main.cpp ${MOONCRPC_FRAMEWORK_SRC})
 
-# 配置头文件搜索路径
-target_include_directories(RpcClientApp PRIVATE
-    ${PROJECT_SOURCE_DIR}/src
-    ${PROJECT_SOURCE_DIR}/protos
-)
+# # 配置头文件搜索路径
+# target_include_directories(RpcClientApp PRIVATE
+#     ${PROJECT_SOURCE_DIR}/src
+#     ${PROJECT_SOURCE_DIR}/protos
+#     ${PROJECT_SOURCE_DIR}/config
+# )
 
-# 链接第三方库
-target_link_libraries(RpcClientApp PRIVATE 
-    spdlog::spdlog
-    nlohmann_json::nlohmann_json
-    zookeeper_mt  
-    Threads::Threads
-    $<IF:$<TARGET_EXISTS:zstd::libzstd_shared>,zstd::libzstd_shared,zstd::libzstd_static>
-    protobuf::libprotobuf
-)
+# # 链接第三方库
+# target_link_libraries(RpcClientApp PRIVATE 
+#     spdlog::spdlog
+#     nlohmann_json::nlohmann_json
+#     zookeeper_mt  
+#     Threads::Threads
+#     $<IF:$<TARGET_EXISTS:zstd::libzstd_shared>,zstd::libzstd_shared,zstd::libzstd_static>
+#     protobuf::libprotobuf
+# )
 
 

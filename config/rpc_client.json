@@ -3,5 +3,13 @@
     "zk_port": 2181,
     "zk_namespace": "/mooncrpc/mooncrpc_service",
     "timeout_ms": 3000,
-    "retry_times": 3
+    "retry_times": 3,
+    "load_balancer": {
+        "type": "weight",
+        "weights": {
+            "192.168.1.100:8001": 3,
+            "192.168.1.101:8001": 2,
+            "192.168.1.102:8001": 1
+        }
+    }
 }

@@ -1,5 +1,5 @@
 #pragma once
-#include "../serializer/serializer_manager.h"
+#include "serializer/serializer_manager.h"
 #include <string>
 #include <cstdint>
 #include <vector>
@@ -16,6 +16,12 @@ enum class MsgType : uint8_t {
     RESPONSE = 2
 };
 
+// 压缩类型枚举
+enum class CompressType : uint8_t {
+    NONE = 0,   // 未压缩(明文或仅加密)
+    ZSTD = 1    // 使用 Zstd 压缩
+};
+
 //RPC 物理包头定义 (定长部分)
 //强制 1 字节对齐，防止编译器自动插入 padding 导致跨语言解析失败
 //使用 push/pop 组合限制自定义规则的作用域
@@ -26,10 +32,11 @@ struct RpcHeader {
     uint64_t seq_id;            //请求序列号 (8B，用于异步请求回调匹配)
     uint8_t msg_type;           //消息类型 MsgType (1B)
     uint8_t serialize_type;     //序列化类型 SerializeType (1B)
+    uint8_t compress_type;      // 压缩标志位 (1B)
     uint32_t error_code;        //错误码 (4B, 0表示成功)
 };
 #pragma pack(pop)
-//协议头总长：2 + 4 + 8 + 1 + 1 + 4 = 20 B
+//协议头总长：2 + 4 + 8 + 1 + 1 + 1 + 4 = 21 B
 
 //完整的 RPC 消息对象 (面向开发者使用的逻辑对象)
 class RpcMessage {
@@ -44,6 +51,7 @@ public:
         header.seq_id = 0;
         header.msg_type = static_cast <uint8_t>(MsgType::REQUEST);
         header.serialize_type = static_cast<uint8_t>(SerializeType::PROTOBUF);
+        header.compress_type = static_cast<uint8_t>(CompressType::NONE);    // 默认不压缩   
         header.error_code = 0;
     }
 };

@@ -1,4 +1,5 @@
 #include "zstd_compress.h"
+#include "log/log_manager.h"
 
 namespace mooncrpc {
 

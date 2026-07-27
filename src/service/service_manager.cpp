@@ -1,4 +1,8 @@
 #include "service_manager.h"
+#include "compress_data/zstd_compress.h"
+#include "encrypt/aes_encrypt.h"
+#include "protocol/rpc_error_code.h"
+#include "log/log_manager.h"
 
 namespace mooncrpc {
 
@@ -20,20 +24,22 @@ bool ServiceManager::RegisterService(std::shared_ptr<Service> service) {
     //获取服务名作为哈希表路由的唯一表示 (key)
     std::string service_name = service->GetServiceName();
 
-    //使用 RAII 机制加锁，保护 service_map_
-    //防止多个线程同时注册服务时触发底层容器扩容，导致数据竞争或迭代器失效
-    std::lock_guard<std::mutex> lock(mutex_);
-
-    //检查服务是否注册过，拒绝重复注册，确保服务路由的唯一性
-    if (service_map_.find(service_name) != service_map_.end()) {
-        LOG_WARN("Service [{}] is already registered.", service_name);
-        return false;
+    {
+        //使用 RAII 机制加锁，保护 service_map_
+        //防止多个线程同时注册服务时触发底层容器扩容，导致数据竞争或迭代器失效
+        std::lock_guard<std::mutex> lock(mutex_);
+    
+        //检查服务是否注册过，拒绝重复注册，确保服务路由的唯一性
+        if (service_map_.find(service_name) != service_map_.end()) {
+            LOG_WARN("Service [{}] is already registered.", service_name);
+            return false;
+        }
+    
+        //将服务实例存入本地注册表
+        service_map_[service_name] = service;
+        LOG_INFO("Successfully registered local RPC service: [{}]", service_name);
+        return true;
     }
-
-    //将服务实例存入本地注册表
-    service_map_[service_name] = service;
-    LOG_INFO("Successfully registered local RPC service: [{}]", service_name);
-    return true;
 }
 
 // 根据服务名称，从本地注册表中提取对应的服务实例
@@ -51,26 +57,113 @@ std::shared_ptr<Service> ServiceManager::GetService(const std::string& service_n
 
 //同步处理 RPC 请求 (执行过程会阻塞当前调用线程)
 void ServiceManager::HandleRpcRequestSync(const std::string& service_name,
-                                        const RpcMessage&request, RpcMessage& response) {
+                                        const RpcMessage& request, RpcMessage& response) {
     auto service = GetService(service_name);
     if (!service) {
         //服务未找到，构造错误相应包
         //假设 2001 表示未找到该服务，错误码体系后面在 core 中构建
-        response.header.error_code = 2001;
+        response.header.error_code = static_cast<uint32_t>(RpcErrorCode::SERVICE_NOT_FOUND);
         response.body = "ERROR: Service not found.";
+
+        // 发送错误消息前也加密，对齐客户端统一的解密流水线
+        std::string encrypted_err;
+        if (AesEncrypt::GetInstance().Encrypt(response.body, encrypted_err)) {
+            response.body = encrypted_err;
+        }
         return;
     }
 
+    // 1. 接收流水线：解密 -> 动态解压
+    std::string decrypted_req;
+    if (!AesEncrypt::GetInstance().Decrypt(request.body, decrypted_req)) {
+        LOG_ERROR("Failed to decrypt request for service [{}]", service_name);
+        response.header.error_code = static_cast<uint32_t>(RpcErrorCode::ENCRYPT_COMPRESS_ERROR);
+        response.body = "ERROR: Decryption failed.";
+        
+        // 对错误消息进行加密
+        std::string encrypted_err;
+        if (AesEncrypt::GetInstance().Encrypt(response.body, encrypted_err)) {
+            response.body = encrypted_err;
+        }
+        return;
+    }
+
+    std::string decompressed_req;
+    if (request.header.compress_type == static_cast<uint8_t>(CompressType::ZSTD)) {
+        if (!ZstdCompress::GetInstance().DecompressString(decrypted_req, decompressed_req)) {
+            // 解压缩出错
+            LOG_ERROR("Failed to decompress request for service [{}]", service_name);
+            response.header.error_code = static_cast<uint32_t>(RpcErrorCode::ENCRYPT_COMPRESS_ERROR);
+            response.body = "ERROR: Decompression failed.";
+            std::string encrypted_err;
+            if (AesEncrypt::GetInstance().Encrypt(response.body, encrypted_err)) {
+                response.body = encrypted_err;
+                return;
+            }
+        }
+    } else {
+        decompressed_req = decrypted_req; // 客户端未压缩，直接透传
+    }
+
+    // 构造明文 Request 给业务层
+    RpcMessage plain_request = request;
+    plain_request.body = decompressed_req;
+
+    // 2. 执行真正的业务逻辑
     //防御性编程：捕获业务代码中可能抛出的所有标准异常
     //确保单一请求的业务 BUG 不会导致整个 RPC 服务端进程崩溃
     try {
         //多态调用：转入具体业务类重写的执行逻辑
-        service->HandleRpcRequest(request, response);
+        service->HandleRpcRequest(plain_request, response);
     } catch (const std::exception& e) {
         LOG_ERROR("Exception occurred while handling request in service [{}]: {}", service_name, e.what());
-        response.header.error_code = 3002; //3002 代表服务端内部业务逻辑错误
+        response.header.error_code = static_cast<uint32_t>(RpcErrorCode::INTERNAL_ERROR);; // 服务端内部业务逻辑错误
         response.body = std::string("ERROR: ") + e.what();
     }
+
+    // 3. 发送流水线：动态压缩(带兜底策略) -> 加密
+    if (response.header.error_code == static_cast<uint32_t>(RpcErrorCode::SUCCESS)) {
+        std::string processed_res;
+        CompressType current_compress_type = CompressType::NONE;
+        constexpr size_t COMPRESS_THRESHOLD = 4096; // 4096 字节阈值
+
+        if (response.body.size() > COMPRESS_THRESHOLD) {
+            // 超过透传阈值，需要压缩
+            if (ZstdCompress::GetInstance().CompressString(response.body, processed_res)) {
+                current_compress_type = CompressType::ZSTD;
+                LOG_DEBUG("Response compressed: {}B -> {}B", response.body.size(), processed_res.size());
+            } else {
+                LOG_WARN("Response compression failed! Falling back to uncompressed mode.");
+                processed_res = response.body;
+                current_compress_type = CompressType::NONE;
+            }
+        } else {
+            processed_res = response.body;
+        }
+
+        // 加密
+        std::string encrypted_res;
+        if (AesEncrypt::GetInstance().Encrypt(processed_res, encrypted_res)) {
+            response.body = encrypted_res;
+            response.header.compress_type = static_cast<uint8_t>(current_compress_type);
+        } else {
+            // 加密失败
+            LOG_ERROR("Failed to encrypt response for service [{}]", service_name);
+            response.header.error_code = static_cast<uint32_t>(RpcErrorCode::ENCRYPT_COMPRESS_ERROR);
+            response.body = "ERROR: Encryption failed.";
+            response.header.compress_type = static_cast<uint8_t>(CompressType::NONE);
+            std::string encrypted_err;
+            if (AesEncrypt::GetInstance().Encrypt(response.body, encrypted_err)) response.body = encrypted_err;
+        }
+    } else {
+        // 若业务抛错，错误信息（简短字符串）无需压缩，直接加密返回以对齐客户端
+        std::string encrypted_err;
+        if (AesEncrypt::GetInstance().Encrypt(response.body, encrypted_err)) {
+            response.body = encrypted_err;
+            response.header.compress_type = static_cast<uint8_t>(CompressType::NONE);
+        }
+    }
+
 }
 
 //异步处理 RPC 请求(将任务装载到线程池，不阻塞底层的网络 I/O 线程)

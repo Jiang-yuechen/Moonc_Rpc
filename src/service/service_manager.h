@@ -1,7 +1,7 @@
 //全局唯一路由器
 #pragma once
-#include "../log/log_manager.h"
-#include "../thread_pool/thread_pool.h"
+
+#include "thread_pool/thread_pool.h"
 #include "service.h"
 #include <string>
 #include <unordered_map>

@@ -1,7 +1,7 @@
 #include "message_cycle.h"
 #include "create_socket.h"
-#include "../protocol/rpc_protocol.h"
-#include "../log/log_manager.h"
+#include "protocol/rpc_protocol.h"
+#include "log/log_manager.h"
 #include <unistd.h>
 #include <cstring>
 #include <cerrno>
