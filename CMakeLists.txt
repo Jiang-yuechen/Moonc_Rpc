@@ -24,7 +24,7 @@ find_package(spdlog CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(Threads REQUIRED)    #系统级多线程库
 find_package(zstd CONFIG REQUIRED)
-find_package(protobuf CONFIG REQUIRED)
+find_package(Protobuf REQUIRED)
 
 
 # 随着模块增加，建议按目录分类管理源文件，保持清晰 --------------------------------------->动态更新
@@ -227,23 +227,23 @@ target_link_libraries(RpcServerApp PRIVATE
 # # 2. 定义客户端可执行程序 (RpcClientApp)
 # # =========================================================================
 # # 将客户端的 main 函数与框架源码一起编译
-# add_executable(RpcClientApp example/client_main.cpp ${MOONCRPC_FRAMEWORK_SRC})
+add_executable(RpcClientApp example/client_main.cpp ${MOONCRPC_FRAMEWORK_SRC})
 
-# # 配置头文件搜索路径
-# target_include_directories(RpcClientApp PRIVATE
-#     ${PROJECT_SOURCE_DIR}/src
-#     ${PROJECT_SOURCE_DIR}/protos
-#     ${PROJECT_SOURCE_DIR}/config
-# )
+# 配置头文件搜索路径
+target_include_directories(RpcClientApp PRIVATE
+    ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/protos
+    ${PROJECT_SOURCE_DIR}/config
+)
 
-# # 链接第三方库
-# target_link_libraries(RpcClientApp PRIVATE 
-#     spdlog::spdlog
-#     nlohmann_json::nlohmann_json
-#     zookeeper_mt  
-#     Threads::Threads
-#     $<IF:$<TARGET_EXISTS:zstd::libzstd_shared>,zstd::libzstd_shared,zstd::libzstd_static>
-#     protobuf::libprotobuf
-# )
+# 链接第三方库
+target_link_libraries(RpcClientApp PRIVATE 
+    spdlog::spdlog
+    nlohmann_json::nlohmann_json
+    zookeeper_mt  
+    Threads::Threads
+    $<IF:$<TARGET_EXISTS:zstd::libzstd_shared>,zstd::libzstd_shared,zstd::libzstd_static>
+    protobuf::libprotobuf
+)
 
 

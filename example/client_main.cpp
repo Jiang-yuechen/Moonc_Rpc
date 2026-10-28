@@ -7,7 +7,7 @@ using namespace mooncrpc;
 
 int main() {
     // 初始化日志系统
-    if (!Logger::GetInstance().Init("./client_logs")) {
+    if (!Logger::GetInstance().Init("../config/log_config.json")) {
         return -1;
         std::cerr << "Initialize log_system failed!" << std::endl;
     }

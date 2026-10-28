@@ -26,7 +26,7 @@ bool RpcProtocol::Encode(const RpcMessage& msg, std::string& out_buffer) {
         }
 
         LOG_DEBUG("Protocol Encode SUCCESS. Total size: {} bytes (Header: {}, Body: {})",
-            total_size, Header_size, header_to_send.body_size);
+            total_size, HEADER_SIZE, header_to_send.body_size);
         
         return true;
     } catch (const std::exception& e) {
