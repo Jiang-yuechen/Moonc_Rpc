@@ -11,7 +11,7 @@ namespace mooncrpc {
 //构造函数：初始化句柄
 ZkClient::ZkClient() : zk_handle_(nullptr), is_connected_(false) {}
 
-//析构函数：利用RAII机制子哦对那个释放连接，防止资源泄漏
+//析构函数：利用RAII机制自动对那个释放连接，防止资源泄漏
 ZkClient::~ZkClient() {
     Close();
 }

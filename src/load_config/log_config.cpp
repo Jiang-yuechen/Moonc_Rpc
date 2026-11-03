@@ -15,7 +15,7 @@ bool LogConfig::InitLogConfig(const std::string& config_file) {
         nlohmann::json config = nlohmann::json::parse(file);
 
         log_dir_ = config.value("log_dir", "./logs");
-        log_level_ = config.value("log_value", "info");
+        log_level_ = config.value("log_level", "info");
         async_mode_ = config.value("async_mode", false);
         async_queue_size_ = config.value("async_queue_size", 8192);     // 必须是 2 的幂次
         async_thread_count_ = config.value("async_thread_count", 1);
